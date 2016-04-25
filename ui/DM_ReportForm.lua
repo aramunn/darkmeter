@@ -123,7 +123,7 @@ function ReportForm.report(channel)
     local rowsToReport = tonumber(ReportForm.maxRows:GetText())
     for i = 1, #orderedUnits do
       if i <= rowsToReport then
-        local options = UI.MainForm:formatRowOptions(orderedUnits[i], 1, UI.lastFight, 1, maxVal)
+        local options = UI.MainForm:formatRowOptions(orderedUnits[i], 1, 1, maxVal, UI.lastFight[stats[1]](UI.lastFight))
         reportText[i+1] = tostring(i) .. ") " .. options.name .. " - " .. options.text
       end
     end
