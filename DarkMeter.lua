@@ -179,7 +179,8 @@ function DarkMeter:OnDocLoaded()
 	Apollo.RegisterEventHandler("MatchFinished", "OnMatchFinished", self)
 
 	-- sets if the player is in a pvp match after loading the addon
-	if MatchingGame:GetPVPMatchState() ~= nil then
+	
+	if MatchingGameLib.GetPvpMatchState() ~= nil then
 		self.playerInPvPMatch = true
 	else
 		self.playerInPvPMatch = false
@@ -788,8 +789,8 @@ function DarkMeter:startCombatIfNecessary()
 			local matchName = "PvP Match (" .. time.nHour .. ":" .. time.nMinute .. ")"
 
 			-- try to set current fight's name to the specific match's type (es. "Arena (10:11)")
-			local matchType = MatchingGame:GetMatchingGameType()
-			for name, code in pairs(MatchingGame.MatchType) do
+			local matchType = MatchingGameLib.GetMatchingGameType()
+			for name, code in pairs(MatchingGameLib.MatchType) do
 				if code == matchType then
 					matchName = name .. " (" .. time.nHour .. ":" .. time.nMinute .. ")"
 				end

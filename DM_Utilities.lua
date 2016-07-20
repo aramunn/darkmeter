@@ -4,6 +4,7 @@
 ---------------------------------------------------
 
 require "Window"
+require "MatchingGameLib"
 
 local DMUtils = {}
 DMUtils.__index = DMUtils
@@ -146,12 +147,12 @@ end
 --------------------------
 
 function DMUtils.playerInPvPMatch()
-  local eType = MatchingGame:GetMatchingGameType()
+  local eType = MatchingGameLib:GetMatchingGameType()
 
   if eType then
     local matches = {"Arena", "Battleground", "OpenArena", "RatedBattleground", "Warplot"}
 
-    for name, code in pairs(MatchingGame.MatchType) do
+    for name, code in pairs(MatchingGameLib.MatchType) do
       if eType == code and DMUtils.indexOf(matches, name) ~= nil then return true end
     end
   end
