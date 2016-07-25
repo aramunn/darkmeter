@@ -233,6 +233,13 @@ function Unit:dps()
   end
 end
 
+function Unit:hps()
+  if self:fightDuration() > 0 then
+    return math.floor( self:healingDone() / self:fightDuration() )
+  else
+    return 0
+  end
+end
 
 ------------------------------------------
 --   skills order function

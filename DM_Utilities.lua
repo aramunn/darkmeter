@@ -4,6 +4,7 @@
 ---------------------------------------------------
 
 require "Window"
+require "MatchingGameLib"
 
 local DMUtils = {}
 DMUtils.__index = DMUtils
@@ -75,6 +76,8 @@ function DMUtils:titleForStat(stat, short)
 		return short and "Dth" or "Deaths"
   elseif stat == "dps" then
     return short and "Dps" or "Dps"
+  elseif stat == "hps" then
+    return short and "Hps" or "Hps"
   elseif stat == "rawhealDone" then
     return short and "rHeal" or "Heal + overheal"
 	-- TODO other stats
@@ -146,12 +149,12 @@ end
 --------------------------
 
 function DMUtils.playerInPvPMatch()
-  local eType = MatchingGame:GetMatchingGameType()
+  local eType = MatchingGameLib:GetMatchingGameType()
 
   if eType then
     local matches = {"Arena", "Battleground", "OpenArena", "RatedBattleground", "Warplot"}
 
-    for name, code in pairs(MatchingGame.MatchType) do
+    for name, code in pairs(MatchingGameLib.MatchType) do
       if eType == code and DMUtils.indexOf(matches, name) ~= nil then return true end
     end
   end
