@@ -390,6 +390,7 @@ function Unit:statsPercentages(sStat)
           multi = multi + #skill.damage.multihits
           multicrit = multicrit + #skill.damage.multicrits
           crit = crit + #skill.damage.crits
+		  
 
           if key == "damage" then
             deflects = deflects + skill.damage.deflects
@@ -402,7 +403,7 @@ function Unit:statsPercentages(sStat)
         multi = multi + #skill[key].multihits
         multicrit = multicrit + #skill[key].multicrits
         crit = crit + #skill[key].crits
-
+		
         if key == "damage" then
           deflects = deflects + skill.damage.deflects
         end
@@ -435,6 +436,14 @@ function Unit:statsPercentages(sStat)
       end
     end
     percentages.attacks = total
+	if total > 0 and tonumber(self:fightDuration()) > 0 then
+	  local swings = DMUtils.roundToNthDecimal((total / self:fightDuration()), 2)
+	  ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, tostring(swings), "DarkMeter")
+	  percentages.swings = swings
+	else
+	  percentages.swings = 0
+	end
+	
     return percentages
   end
 end
