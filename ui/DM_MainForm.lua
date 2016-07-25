@@ -10,7 +10,6 @@ local DarkMeter
 local UI
 local DMUtils
 local Fight
-
 local LockWindow
 
 -- initialize main window
@@ -45,13 +44,8 @@ function MainForm:init(xmlDoc)
   MainForm:initColumns()
   self:setTracked()
   self:setCaptureBtn()
-  UI:show()
-  
-  LockWindow = Darkmeter.settings.lockWindow
-  MainForm.form:SetStyle("Moveable", not LockWindow)
-  MainForm.form:SetStyle("Sizable", not LockWindow)
+  UI:show()  
 end
-
 
 
 -- closes the main window, all subwindows and remove event listeners
@@ -189,6 +183,11 @@ function MainForm:setCaptureBtn()
 end
 
 
+function MainForm:LoadSettings()
+  LockWindow = DarkMeter.settings.lockWindow
+end
+
+
 -------------------------------------------------------------
 -- Display Utility functions
 -------------------------------------------------------------
@@ -197,6 +196,10 @@ end
 -- mainform columns initialization or update
 -- sets title, creates columns, prepare columns variables...
 function MainForm:initColumns()
+  
+  -- Don't give a shit anymore, by this time we know all settings are loaded
+  self.LoadSettings()
+  
   self.contentWidth = self.content:GetWidth()
   self.colWidth = {}
 
@@ -263,7 +266,6 @@ function MainForm:initColumns()
       self.cols[i] = nil
     end
   end
-
 end
 
 
