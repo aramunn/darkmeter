@@ -149,7 +149,7 @@ end
 --------------------------
 
 function DMUtils.playerInPvPMatch()
-  local eType = MatchingGameLib:GetMatchingGameType()
+  local eType = MatchingGameLib.GetMatchingGameType()
 
   if eType then
     local matches = {"Arena", "Battleground", "OpenArena", "RatedBattleground", "Warplot"}
