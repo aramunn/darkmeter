@@ -438,7 +438,6 @@ function Unit:statsPercentages(sStat)
     percentages.attacks = total
 	if total > 0 and tonumber(self:fightDuration()) > 0 then
 	  local swings = DMUtils.roundToNthDecimal((total / self:fightDuration()), 2)
-	  ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, tostring(swings), "DarkMeter")
 	  percentages.swings = swings
 	else
 	  percentages.swings = 0
