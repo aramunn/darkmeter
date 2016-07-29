@@ -40,6 +40,8 @@ function MainForm:init(xmlDoc)
   self.captureBtn = MainForm.footer:FindChild("CaptureMode")
   self.fightDuration = self.footer:FindChild("FightDuration")
   self.fightTimer = self.fightDuration:FindChild("Timer")
+  self.totalDps = self.footer:FindChild("TotalDps")
+  self.totalDpsValue = self.totalDps:FindChild("Value")
 
   MainForm:initColumns()
   self:setTracked()
@@ -450,6 +452,7 @@ function MainForm:showGroupStats()
   end
 
 
+  UI.MainForm.totalDpsValue:SetText(DMUtils.formatNumber(UI.lastFight:dps(), 0, DarkMeter.settings.shortNumberFormat))
   UI.lastUpdate = GameLib.GetGameTime()
 end
 
