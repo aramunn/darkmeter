@@ -34,6 +34,7 @@ function PlayerDetails:init(xmlDoc)
     PlayerDetails.oMulti = PlayerDetails.overall:FindChild("MultiHit")
     PlayerDetails.oMultiCrit = PlayerDetails.overall:FindChild("MultiCrit")
     PlayerDetails.oAttacks = PlayerDetails.overall:FindChild("Attacks")
+	PlayerDetails.oSwings = PlayerDetails.overall:FindChild("Swings")
 
     -- bottom windows
     -- first is the initial tab
@@ -260,6 +261,7 @@ function PlayerDetails.controls.setOverallInfos(options, formatted)
     oMultiCrit = "multicrit"
   }
   -- total
+  
   if options.total then
     PlayerDetails.oTotal:SetText( options.total )
   else
@@ -270,6 +272,12 @@ function PlayerDetails.controls.setOverallInfos(options, formatted)
     PlayerDetails.oAttacks:SetText( options.attacks )
   else
     PlayerDetails.oAttacks:SetText( "-" )
+  end
+  -- swings
+  if options.swings then
+    PlayerDetails.oSwings:SetText( options.swings )
+  else
+    PlayerDetails.oSwings:SetText( "-" )
   end
   -- others percentages
   for wndName, val in pairs(iteration) do
@@ -757,6 +765,7 @@ function PlayerDetails.botControls:showOverallDoneBy(name)
 
     percentages.deflects = deflects / total * 100
     percentages.attacks = total
+	
 
     local overallInfos = {
       total = damage
@@ -768,6 +777,7 @@ function PlayerDetails.botControls:showOverallDoneBy(name)
       overallInfos.multicrit = multicrits
       overallInfos.attacks = attacks
       overallInfos.deflect = deflects
+	  overallInfos.swings = swings
     end
     PlayerDetails.controls.setOverallInfos(overallInfos)
   end
@@ -787,6 +797,7 @@ function PlayerDetails.botControls:setBaseOverallInfos()
     overallInfos.multicrit = percents.multicrits
     overallInfos.attacks = percents.attacks
     overallInfos.deflect = percents.deflects
+	overallInfos.swings = percents.swings
   end
   PlayerDetails.controls.setOverallInfos(overallInfos)
 end
@@ -805,6 +816,7 @@ function PlayerDetails.botControls:showDetailsForRow(data)
     overallInfos.multihit = percents.multihitsCount .. " - " .. DMUtils.roundToNthDecimal(percents.multihits, 1) .. "%"
     overallInfos.multicrit = percents.multicritsCount .. " - " .. DMUtils.roundToNthDecimal(percents.multicrits, 1) .. "%"
     overallInfos.attacks = tostring(percents.attacks)
+	overallInfos.swings = tostring(percents.swings)
     if percents.deflects and percents.deflectsCount then
         overallInfos.deflect = percents.deflectsCount .. " - " .. DMUtils.roundToNthDecimal(percents.deflects, 1) .. "%"
       end

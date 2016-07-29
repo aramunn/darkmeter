@@ -10,7 +10,7 @@ local DarkMeter
 local UI
 local DMUtils
 local Fight
-
+local LockWindow
 
 -- initialize main window
 function MainForm:init(xmlDoc)
@@ -46,9 +46,8 @@ function MainForm:init(xmlDoc)
   MainForm:initColumns()
   self:setTracked()
   self:setCaptureBtn()
-  UI:show()
+  UI:show()  
 end
-
 
 
 -- closes the main window, all subwindows and remove event listeners
@@ -65,47 +64,54 @@ end
 
 -- when resizing window
 function MainForm.controls:OnResize(wndH, wndC)
-  -- prevent reinitializing everything on drag
-  if wndH == wndC and not MainForm.dragging then
-    MainForm:initColumns()
-    MainForm:showGroupStats()
+  if not LockWindow then
+    -- prevent reinitializing everything on drag
+    if wndH == wndC and not MainForm.dragging then
+      MainForm:initColumns()
+      MainForm:showGroupStats()
+    end
   end
 end
 
 -- drag window functions
 
 function MainForm.controls:OnStartDrag()
-  MainForm.dragging = true
-  
-  local mousePos = Apollo.GetMouse()
-  MainForm.controls.mousePosition = {
-    x = mousePos.x,
-    y = mousePos.y
-  }
+  if not LockWindow then
+	  MainForm.dragging = true
+	  local mousePos = Apollo.GetMouse()
+	  MainForm.controls.mousePosition = {
+		x = mousePos.x,
+		y = mousePos.y
+	  }
 
-  local x, y = MainForm.form:GetAnchorOffsets()
-  local width = MainForm.form:GetWidth()
-  local height = MainForm.form:GetHeight()
-  MainForm.controls.startPosition = {
-    x = x,
-    y = y,
-    width = width,
-    height = height
-  }
+	  local x, y = MainForm.form:GetAnchorOffsets()
+	  local width = MainForm.form:GetWidth()
+	  local height = MainForm.form:GetHeight()
+	  MainForm.controls.startPosition = {
+		x = x,
+		y = y,
+		width = width,
+		height = height
+	  }
+  end
 end
 
 function MainForm.controls:OnStopDrag()
-  MainForm.dragging = false
+  if not LockWindow then
+	MainForm.dragging = false
+  end
 end
 
 function MainForm.controls:OnMouseMove(wndH, wndC)
-  if MainForm.dragging and wndH == wndC then
-    local mousePos = Apollo.GetMouse()
-    
-    local newOffsetX = mousePos.x - MainForm.controls.mousePosition.x + MainForm.controls.startPosition.x
-    local newOffsetY = mousePos.y - MainForm.controls.mousePosition.y + MainForm.controls.startPosition.y
+  if not LockWindow then
+	  if MainForm.dragging and wndH == wndC then
+		local mousePos = Apollo.GetMouse()
+		
+		local newOffsetX = mousePos.x - MainForm.controls.mousePosition.x + MainForm.controls.startPosition.x
+		local newOffsetY = mousePos.y - MainForm.controls.mousePosition.y + MainForm.controls.startPosition.y
 
-    MainForm.form:SetAnchorOffsets(newOffsetX, newOffsetY, (newOffsetX + MainForm.controls.startPosition.width), (newOffsetY + MainForm.controls.startPosition.height) )
+		MainForm.form:SetAnchorOffsets(newOffsetX, newOffsetY, (newOffsetX + MainForm.controls.startPosition.width), (newOffsetY + MainForm.controls.startPosition.height) )
+	  end
   end
 end
 
@@ -117,6 +123,22 @@ end
 -- popup to select which fight the user wanna see (overall, current and a list of the past fights)
 function MainForm.controls:OnSelectFight()
   UI.SelectFight:show()
+end
+
+-- lock the window
+function MainForm.controls:OnLockWindow()
+	if LockWindow then
+		MainForm.form:SetStyle("Moveable", LockWindow)
+		MainForm.form:SetStyle("Sizable", LockWindow)
+		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now unlocked", "DarkMeter")
+		LockWindow = false
+	else
+		MainForm.form:SetStyle("Moveable", LockWindow)
+		MainForm.form:SetStyle("Sizable", LockWindow)
+		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now locked", "DarkMeter")
+		LockWindow = true
+	end
+	DarkMeter.settings.lockWindow = LockWindow
 end
 
 -- popup to edit the general settings
@@ -163,6 +185,11 @@ function MainForm:setCaptureBtn()
 end
 
 
+function MainForm:LoadSettings()
+  LockWindow = DarkMeter.settings.lockWindow
+end
+
+
 -------------------------------------------------------------
 -- Display Utility functions
 -------------------------------------------------------------
@@ -171,6 +198,10 @@ end
 -- mainform columns initialization or update
 -- sets title, creates columns, prepare columns variables...
 function MainForm:initColumns()
+  
+  -- Don't give a shit anymore, by this time we know all settings are loaded
+  self.LoadSettings()
+  
   self.contentWidth = self.content:GetWidth()
   self.colWidth = {}
 
@@ -237,7 +268,6 @@ function MainForm:initColumns()
       self.cols[i] = nil
     end
   end
-
 end
 
 

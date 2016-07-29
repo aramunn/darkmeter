@@ -50,7 +50,8 @@ DarkMeter.availableStats = {
 	"interrupts",
 	"damageTaken",
 	"deaths",
-	"dps"
+	"dps",
+	"hps"
 }
 
 -- defaults settings, this table is overwritten on logins and stored on logouts
@@ -74,7 +75,8 @@ DarkMeter.defaults = {
 	mergePvpFights = true,				-- if enabled and inside a pvp match, the currentFight will last untill the match is over, even when going out of combat
 	shortNumberFormat = true, 		-- if enabled, the number will be shown as 1.2Mil instead of 1.200,000
 	mergeDots = false,						-- if true, all the skills that create a dot effect will be merged with the dot damage part, this means that the number of attacks will also count each dot tick
-	alwaysCapture = false
+	alwaysCapture = false,
+	lockWindow = false
 }
 DarkMeter.settings = {}
 

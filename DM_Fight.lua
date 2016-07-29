@@ -152,7 +152,13 @@ function Fight:dps()
   return total / self:duration()
 end
 
-
+function Fight:hps()
+  local total = 0
+  for id, unit in pairs(self.groupMembers) do
+    total = total + unit:healingDone()
+  end
+  return total / self:duration()
+end
 
 
 -- return an ordered list of all party members ordered by the diven stats

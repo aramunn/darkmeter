@@ -76,6 +76,8 @@ function DMUtils:titleForStat(stat, short)
 		return short and "Dth" or "Deaths"
   elseif stat == "dps" then
     return short and "Dps" or "Dps"
+  elseif stat == "hps" then
+    return short and "Hps" or "Hps"
   elseif stat == "rawhealDone" then
     return short and "rHeal" or "Heal + overheal"
 	-- TODO other stats
@@ -147,7 +149,7 @@ end
 --------------------------
 
 function DMUtils.playerInPvPMatch()
-  local eType = MatchingGameLib:GetMatchingGameType()
+  local eType = MatchingGameLib.GetMatchingGameType()
 
   if eType then
     local matches = {"Arena", "Battleground", "OpenArena", "RatedBattleground", "Warplot"}
