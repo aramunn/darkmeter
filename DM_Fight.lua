@@ -146,18 +146,26 @@ end
 
 function Fight:dps()
   local total = 0
+  local duration = 0.1
+  if self:duration() > 0 then
+    duration = self:duration()
+  end
   for id, unit in pairs(self.groupMembers) do
     total = total + unit:damageDone()
   end
-  return total / self:duration()
+  return total / duration
 end
 
 function Fight:hps()
   local total = 0
+  local duration = 0.1
+  if self:duration() > 0 then
+    duration = self:duration()
+  end
   for id, unit in pairs(self.groupMembers) do
     total = total + unit:healingDone()
   end
-  return total / self:duration()
+  return total / duration
 end
 
 

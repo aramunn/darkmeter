@@ -110,7 +110,7 @@ function DMUtils.formatNumber(num, places, bShortFormat)
         ret = DMUtils.roundToNthDecimal(num, places) -- hundreds
     end
   else
-    if not num then
+    if not num or num == math.huge then
       return 0
     elseif num >= 1000 then
       ret = ""
