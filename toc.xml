@@ -1,9 +1,9 @@
-<?xml version="0.5.7" encoding="UTF-8"?>
+<?xml version="0.5.8" encoding="UTF-8"?>
 <Addon Author="Zeffuro Jugo" APIVersion="13" Name="DarkMeter" Description="Combat stats">
     <Script Name="ui/DM_SkillsIcons.lua"/>
     <Script Name="DM_Utilities.lua"/>
     <Script Name="DM_Skill.lua"/>
-    <Script Name="DM_Unit.lua"/>
+    <Script Name="DM_Unit.lua"/
     <Script Name="DM_Group.lua"/>
     <Script Name="DM_Fight.lua"/>
     <Script Name="ui/DM_ResetForm.lua"/>
