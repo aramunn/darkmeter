@@ -149,17 +149,7 @@ end
 --------------------------
 
 function DMUtils.playerInPvPMatch()
-  local eType = MatchingGameLib.GetMatchingGameType()
-
-  if eType then
-    local matches = {"Arena", "Battleground", "OpenArena", "RatedBattleground", "Warplot"}
-
-    for name, code in pairs(MatchingGameLib.MatchType) do
-      if eType == code and DMUtils.indexOf(matches, name) ~= nil then return true end
-    end
-  end
-
-  return false
+  return MatchingGameLib.IsInPvpGame()
 end
 
 --------------------------
