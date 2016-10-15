@@ -1,4 +1,3 @@
-
 -------------------------------------------------------------
 -- Group class
 -------------------------------------------------------------
@@ -10,10 +9,9 @@
 -------------------------------------------------------------
 
 local Group = {}
-
+local next = next
 -- external classes
 local Unit = Apollo.GetPackage("DarkMeter:Unit").tPackage
-
 
 function Group:new()
   local group = {}
@@ -23,17 +21,6 @@ function Group:new()
   return setmetatable(group, self)
 end
 
-
--- return group members ids
-function Group:membersIds()
-  ids = {}
-  for i = 1, #self.members do
-    ids[i] = self.members[i].id
-  end
-  return ids
-end
-
-
 -- adds a unit to the group if not already in the group
 function Group:addMember(wsUnit)
   local unitId = wsUnit:GetId()
@@ -41,14 +28,14 @@ function Group:addMember(wsUnit)
 
   -- if the unit is already in the group return false
   if self.members[unitId] ~= nil then return false end
-  
+
   -- instantiate a new unit and add to the group
   local unit = Unit:new(wsUnit)
   self.members[unitId] = unit
 
   -- local Rover = Apollo.GetAddon("Rover")
   -- if Rover then
-  --   Rover:AddWatch("group", self, nil)
+  -- Rover:AddWatch("group", self, nil)
   -- end
 
   return true
@@ -66,12 +53,10 @@ end
 
 -- returns true if at least one membaer is in combat
 function Group:inCombat()
-  for id, unit in pairs(self.members) do
+  for _, unit in next, self.members do
     if unit.inCombat then return true end
   end
   return false
 end
-
-
 
 Apollo.RegisterPackage(Group, "DarkMeter:Group", 1, {"DarkMeter:Unit"})
