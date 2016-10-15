@@ -1,4 +1,3 @@
-
 -------------------------------------------------------------
 -- Interface class
 -------------------------------------------------------------
@@ -12,12 +11,12 @@ local DarkMeter = nil
 
 UI.minColWidth = 50
 
-local MainForm = Apollo.GetPackage("DarkMeter:MainForm").tPackage             -- main form (the main window with all the bars etc..) 
-local ResetForm = Apollo.GetPackage("DarkMeter:ResetForm").tPackage            -- prompt reset data form and all the correlated functions
-UI.lastFight = nil           -- contains reference to the last merged fight
-local ReportForm = Apollo.GetPackage("DarkMeter:ReportForm").tPackage           -- form used to report the addon data into ingame chat
-local DeathRecapForm = Apollo.GetPackage("DarkMeter:DeathRecapForm").tPackage           -- form used to report a player's death
-local SelectFight = Apollo.GetPackage("DarkMeter:SelectFight").tPackage           -- form to select which fight inspect
+local MainForm = Apollo.GetPackage("DarkMeter:MainForm").tPackage -- main form (the main window with all the bars etc..)
+local ResetForm = Apollo.GetPackage("DarkMeter:ResetForm").tPackage -- prompt reset data form and all the correlated functions
+UI.lastFight = nil -- contains reference to the last merged fight
+local ReportForm = Apollo.GetPackage("DarkMeter:ReportForm").tPackage -- form used to report the addon data into ingame chat
+local DeathRecapForm = Apollo.GetPackage("DarkMeter:DeathRecapForm").tPackage -- form used to report a player's death
+local SelectFight = Apollo.GetPackage("DarkMeter:SelectFight").tPackage -- form to select which fight inspect
 local SettingsForm = Apollo.GetPackage("DarkMeter:SettingsForm").tPackage
 local PlayerDetails = Apollo.GetPackage("DarkMeter:PlayerDetails").tPackage
 
@@ -60,7 +59,7 @@ function UI:OnDocLoaded()
     SelectFight:init(self.xmlDoc)
     SettingsForm:init(self.xmlDoc)
     PlayerDetails:init(self.xmlDoc)
-    
+
     if MainForm.initialLocation then -- location loaded from saved settings
       MainForm.form:MoveToLocation(WindowLocation.new(MainForm.initialLocation))
     end
@@ -69,8 +68,6 @@ function UI:OnDocLoaded()
     MainForm.content:SetBGOpacity(DarkMeter.settings.bgOpacity/100)
   end
 end
-
-
 
 -------------------------------------------------------------
 -- Row class
@@ -118,7 +115,7 @@ function Row:new(parent, i)
   row.lastText = row.text:GetText()
   row.textVisible = true
 
-  row.currentWidth = false   -- set to false because the width needs to be initialized and depends on the form width/columns
+  row.currentWidth = false -- set to false because the width needs to be initialized and depends on the form width/columns
 
   row.currentData = {}
 
@@ -142,7 +139,7 @@ function Row:update(options)
     self.currentHeight = DarkMeter.settings.rowHeight
     heightChanged = true
   end
-  
+
   -- RANK
   if DarkMeter.settings.showRanks and options.rank ~= false then
     if not self.rankVisible then
@@ -152,7 +149,7 @@ function Row:update(options)
     -- update rank only if it changes
     if self.lastRank ~= options.rank and options.rank then
       self.rank:SetText(tostring(options.rank))
-      
+
       if options.rank == 1 then
         self.rank:SetTextColor(ApolloColor.new("ffcec313"))
       elseif options.rank == 2 then
@@ -172,7 +169,6 @@ function Row:update(options)
     moveLeft = moveLeft + 20
   end
 
-  
   -- ICON
   if DarkMeter.settings.showClassIcon and options.icon ~= false then
     if not self.iconVisible then
@@ -188,7 +184,7 @@ function Row:update(options)
     end
     -- update the position only if the moveLeft var has changed, this happens after unchecking the show ranks options
     if self.iconMoveLeft ~= (self.iconLeft - moveLeft) or heightChanged then
-      self.icon:SetAnchorOffsets( (self.iconLeft - moveLeft), math.ceil((DarkMeter.settings.rowHeight - 20) / 2), ((self.iconLeft + 20) -  moveLeft), (math.ceil((DarkMeter.settings.rowHeight - 20) / 2) + 20))
+      self.icon:SetAnchorOffsets( (self.iconLeft - moveLeft), math.ceil((DarkMeter.settings.rowHeight - 20) / 2), ((self.iconLeft + 20) - moveLeft), (math.ceil((DarkMeter.settings.rowHeight - 20) / 2) + 20))
       self.iconMoveLeft = moveLeft
     end
   else
@@ -221,7 +217,6 @@ function Row:update(options)
     self.nameVisible = false
   end
 
-
   -- BACKGROUND
   if options.background then
     if not self.bgVisible then
@@ -236,7 +231,6 @@ function Row:update(options)
     self.bg:Show(false)
     self.bgVisible = false
   end
-
 
   -- TEXT
   if options.text then
@@ -266,16 +260,14 @@ function Row:update(options)
 
   -- sets unit reference
   local newData = options.unit
-  
+
   -- set data only if the id has changed or the name has changed and the unit is a pet
-  if newData and ( self.currentData.id ~= newData.id or (newData.pet and self.currentData.name ~= newData.name ))  then
+  if newData and ( self.currentData.id ~= newData.id or (newData.pet and self.currentData.name ~= newData.name )) then
     self.bar:SetData(newData)
     self.currentData = newData
   end
-  
+
 end
-
-
 
 -------------------------------------------------------------
 -- Misc functions
@@ -298,7 +290,7 @@ function UI:promptResetData()
   -- 1 - always reset the data
   if DarkMeter.settings.resetMapChange == 1 then
     UI:resetData()
-  -- 2 - ask the user
+    -- 2 - ask the user
   elseif DarkMeter.settings.resetMapChange == 2 then
     UI.ResetForm:show()
   end
@@ -314,12 +306,10 @@ function UI:resetData()
   UI.lastFight = nil
 end
 
-
-
 -- shows the desired data for the given fights
 function UI:showDataForFight(fight)
   UI.lastFight = fight
-  
+
   -- limit updates, updating the ui on every combatlog event kills fps
   if UI.needsUpdate and ( GameLib.GetGameTime() - UI.lastUpdate ) >= 0.3 then
     UI.needsUpdate = false
@@ -335,8 +325,6 @@ function UI:showDataForFight(fight)
   end
 end
 
-
-
 UI.MainForm = MainForm
 UI.ResetForm = ResetForm
 UI.ReportForm = ReportForm
@@ -345,6 +333,5 @@ UI.SelectFight = SelectFight
 UI.SettingsForm = SettingsForm
 UI.PlayerDetails = PlayerDetails
 UI.Row = Row
-
 
 Apollo.RegisterPackage(UI, "DarkMeter:UI", 1, {"DarkMeter:Utils", "DarkMeter:Fight"})
