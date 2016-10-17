@@ -100,6 +100,12 @@ function SettingsForm.controls:OnMergePets()
   SettingsForm:reinitUI()
 end
 
+function SettingsForm.controls:OnPlebMode()
+  local btn = SettingsForm.buttons:FindChild("PlebMode")
+  DarkMeter.settings.sortMode = btn:IsChecked()
+  SettingsForm:reinitUI()
+end
+
 function SettingsForm.controls:OnShowClassIcon()
   local btn = SettingsForm.buttons:FindChild("ShowClassIcon")
   DarkMeter.settings.showClassIcon = btn:IsChecked()
@@ -234,6 +240,7 @@ function SettingsForm:setValuesFromSettings()
   self.buttons:FindChild("MergePvPFights"):SetCheck(DarkMeter.settings.mergePvpFights)
   self.buttons:FindChild("ShortNumberFormat"):SetCheck(DarkMeter.settings.shortNumberFormat)
   self.buttons:FindChild("MergeDots"):SetCheck(DarkMeter.settings.mergeDots)
+  self.buttons:FindChild("PlebMode"):SetCheck(DarkMeter.settings.sortMode)
   self.buttons:FindChild("ResetFightBox"):FindChild("ResetFight" .. DarkMeter.settings.resetMapChange):SetCheck(true)
   self.rowHeightSlider:SetValue(DarkMeter.settings.rowHeight)
   self.rowHeightBox:SetText(DarkMeter.settings.rowHeight)
