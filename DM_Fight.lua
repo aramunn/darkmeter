@@ -141,6 +141,12 @@ function Fight:rawhealDone()
   return self:healingDone() + self:overhealDone()
 end
 
+function Fight:absorbHealingDone()
+  SendVarToRover("Absorb", self:absorbsDone())
+  SendVarToRover("Healing", self:healingDone())
+  return self:healingDone() + self:absorbsDone()
+end
+
 function Fight:dps()
   local total = 0
   local duration = 0.1
@@ -171,8 +177,12 @@ function Fight:orderMembersBy(stat)
     error("Cannot order fight members by " .. stat .. " Unit class doesn't have such method")
   end
 
-  local function sortFunct(a, b)
+  local function sortNormal(a, b)
     return a[stat](a) > b[stat](b)
+  end
+
+  local function sortPleb(a, b)
+    return a[stat](a) < b[stat](b)
   end
 
   local tmp = {}
@@ -184,8 +194,13 @@ function Fight:orderMembersBy(stat)
       end
     end
   end
+
   if #tmp > 1 then
-    table.sort(tmp, sortFunct)
+    if not DarkMeter.settings.sortMode then
+      table.sort(tmp, sortNormal)
+    else
+      table.sort(tmp, sortPleb)
+    end
   end
   return tmp
 end
