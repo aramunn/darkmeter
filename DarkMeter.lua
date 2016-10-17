@@ -51,6 +51,7 @@ DarkMeter.availableStats = {
   "dps",
   "hps",
   "absorbsDone",
+  "absorbHealingDone"
   --"absorbsTaken"
 }
 
@@ -60,7 +61,7 @@ DarkMeter.defaults = {
       fPoints = {0, 0, 0, 0},
       nOffsets = {200, 300, 600, 600}
     }),
-  overall = true,
+  overall = false,
   mergePets = true,
   showRanks = true,
   showClassIcon = true,
@@ -77,6 +78,7 @@ DarkMeter.defaults = {
   mergeDots = false, -- if true, all the skills that create a dot effect will be merged with the dot damage part, this means that the number of attacks will also count each dot tick
   alwaysCapture = false,
   lockWindow = false,
+  sortMode = false,
   profiles = {
     DPS = {
       "damageDone",
@@ -89,7 +91,9 @@ DarkMeter.defaults = {
       "interrupts"
     },
     Absorbs = {
-      "absorbsDone",
+      "absorbHealingDone",
+      "absorbDone",
+      "healingDone",
       "interrupts"
     },
     Deaths = {
@@ -97,7 +101,7 @@ DarkMeter.defaults = {
       "interrupts"
     }
   },
-  currentProfile = ""
+  currentProfile = "DPS",
 }
 DarkMeter.settings = {}
 
@@ -315,6 +319,22 @@ function DarkMeter:removeTracked(name)
   end
 end
 
+function DarkMeter:restoreSettings()
+  self.settings = self.defaults
+
+  -- hides every other window
+  UI.PlayerDetails:hide()
+  UI.ReportForm:hide()
+  UI.ResetForm:hide()
+  UI.SelectFight:hide()
+  UI.SettingsForm:hide()
+
+  UI.MainForm.form:MoveToLocation(self.settings.mainFormLocation)
+  UI.MainForm:initColumns()
+  UI.MainForm:showGroupStats()
+  UI.MainForm.wrapper:RecalculateContentExtents()
+end
+
 ----------------------------------
 -- slash commands
 ----------------------------------
@@ -337,19 +357,7 @@ function DarkMeter.slashCommands:toggle()
 end
 
 function DarkMeter.slashCommands:restore()
-  self.settings = self.defaults
-
-  -- hides every other window
-  UI.PlayerDetails:hide()
-  UI.ReportForm:hide()
-  UI.ResetForm:hide()
-  UI.SelectFight:hide()
-  UI.SettingsForm:hide()
-
-  UI.MainForm.form:MoveToLocation(self.settings.mainFormLocation)
-  UI.MainForm:initColumns()
-  UI.MainForm:showGroupStats()
-  UI.MainForm.wrapper:RecalculateContentExtents()
+  self:restoreSettings()
 end
 
 ----------------------------------
