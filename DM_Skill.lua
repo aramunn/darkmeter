@@ -43,6 +43,7 @@ function Skill:new()
     damageDone = 0,
     healingDone = 0,
     overhealDone = 0,
+    absorbHealingDone = 0,
     interrupts = 0,
     absorbsDone = 0,
     absorbsTaken = 0
@@ -290,6 +291,8 @@ function Skill:dataFor(stat)
     return self.interrupts
   elseif stat == "rawhealDone" then
     return self.healingDone + self.overhealDone
+  elseif stat == "absorbHealingDone" then
+    return self.healingDone + self.absorbsDone
   elseif stat == "absorbsDone" then
     return self.absorbsDone
   elseif stat == "absorbsTaken" then

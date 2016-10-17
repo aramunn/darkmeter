@@ -206,7 +206,7 @@ function Unit:absorbsTaken()
   return self.absorbsTakenCached
 end
 
-local stats = {"damageDone", "healingDone", "overhealDone", "interrupts", "absorbsDone", "rawhealDone"}
+local stats = {"damageDone", "healingDone", "overhealDone", "interrupts", "absorbsDone", "rawhealDone", "absorbHealingDone"}
 
 -- define functions to return the stats in this array, since they share the same logic
 for i = 1, #stats do
@@ -376,13 +376,11 @@ function Unit:statsPercentages(sStat)
   local key
   if sStat == "damageDone" then
     key = "damage"
-  elseif sStat == "healingDone" or sStat == "overhealDone" or sStat == "rawhealDone" then
+  elseif sStat == "healingDone" or sStat == "overhealDone" or sStat == "rawhealDone" or sStat == "absorbHealingDone" then
     key = "heals"
   elseif sStat == "damageTaken" then
     key = "damagingSkillsTaken"
-  elseif sStat == "absorbsTaken" then
-    key = "absorbs"
-  elseif sStat == "absorbsDone" then
+  elseif sStat == "absorbsTaken" or sStat == "absorbsDone" then
     key = "absorbs"
 
   end
@@ -458,6 +456,7 @@ function Unit:expireCache()
   self.interruptsCached = nil
   self.rawhealDoneCached = nil
   self.absorbsDoneCached = nil
+  self.absorbHealingDoneCached = nil
 end
 
 -- this function is called whenever a skilltaken is added to the unit

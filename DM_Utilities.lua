@@ -80,6 +80,8 @@ function DMUtils:titleForStat(stat, short)
     return short and "AbsrbTk" or "Absorbs Taken"
   elseif stat == "rawhealDone" then
     return short and "rHeal" or "Heal + overheal"
+  elseif stat == "absorbHealingDone" then
+    return short and "aHeal" or "Absorb + Heal"
     -- TODO other stats
   end
 end
