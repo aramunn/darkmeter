@@ -8,7 +8,7 @@
 require "Window"
 
 local DarkMeter = {}
-DarkMeter.version = "0.6.0"
+DarkMeter.version = "0.6.1"
 
 if _G.DarkMeter == nil then _G.DarkMeter = {} end
 -- enable prints and rover debugging
@@ -67,6 +67,7 @@ DarkMeter.defaults = {
   showClassIcon = true,
   selectedStats = { -- ordered values that I'm tracking
     "damageDone",
+    "dps",
     "interrupts"
   },
   reportRows = 5, -- number of rows reported in chat
