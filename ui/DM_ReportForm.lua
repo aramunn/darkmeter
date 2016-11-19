@@ -1,11 +1,9 @@
-
-local ReportForm = {}            -- prompt reset data form and all the correlated functions
-ReportForm.controls = {}         -- form controls
+local ReportForm = {} -- prompt reset data form and all the correlated functions
+ReportForm.controls = {} -- form controls
 local UI
 local Fight
 local DarkMeter
 local DMUtils
-
 
 function ReportForm:init(xmlDoc)
   UI = Apollo.GetPackage("DarkMeter:UI").tPackage
@@ -21,7 +19,6 @@ function ReportForm:init(xmlDoc)
   end
   ReportForm.maxRows = ReportForm.form:FindChild("RowsN")
 end
-
 
 -------------------------------------------------------------
 -- ReportForm
@@ -41,7 +38,7 @@ function ReportForm:show()
 
     local left = (screenWidth - winWidth)/2
     local top = (screenHeight - winHeight)/2
- 
+
     self.form:Move( left, top, winWidth, winHeight )
 
     self.form:Show(true)
@@ -58,7 +55,6 @@ function ReportForm:hide()
     end
   end
 end
-
 
 function ReportForm.controls:OnCancel()
   ReportForm:hide()
@@ -102,7 +98,7 @@ end
 function ReportForm.report(channel)
   if not UI.lastFight then
     ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "No fights to report", "DarkMeter")
-    return 
+    return
   end
 
   local stats = DarkMeter.settings.selectedStats
@@ -111,10 +107,10 @@ function ReportForm.report(channel)
     local reportText = {}
 
     reportText[1] = "DarkMeter - " .. DMUtils:titleForStat(stats[1], false) .. " - " .. UI.lastFight:name()
-      
+
     -- sort all group members by the main stat being monitored
     local orderedUnits = UI.lastFight:orderMembersBy(stats[1])
-    
+
     local maxVal = 0
     for i = 1, #orderedUnits do
       maxVal = math.max(maxVal, orderedUnits[i][stats[1]](orderedUnits[i]) )

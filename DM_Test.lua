@@ -1,6 +1,5 @@
-
 -- creates dummy data for development and testing
-  
+
 local DarkMeter = Apollo.GetAddon("DarkMeter")
 local DMUtils = Apollo.GetPackage("DarkMeter:Utils").tPackage
 local Unit = Apollo.GetPackage("DarkMeter:Unit").tPackage
@@ -9,7 +8,7 @@ local Fight = Apollo.GetPackage("DarkMeter:Fight").tPackage
 
 local testFight = Fight:new()
 testFight.forcedName = "Test fight"
-
+local next = next
 
 -------------------------------------------
 --- Fake Units
@@ -41,7 +40,6 @@ function testUnit:IsInCombat()
   return false
 end
 
-
 -- dummy enemy with static values
 local enemyUnit = {
   pet = false
@@ -67,7 +65,6 @@ end
 function enemyUnit:IsInCombat()
   return false
 end
-
 
 -------------------------------------------
 --- Fake Spell
@@ -95,7 +92,7 @@ function testAttack:new()
 
   local rnm = math.random(1, 100)
 
-  if rnm < 5 then 
+  if rnm < 5 then
     dummyVals.state = GameLib.CodeEnumCombatResult.Avoid
   elseif rnm < 15 then
     dummyVals.state = GameLib.CodeEnumCombatResult.Critical
@@ -106,7 +103,6 @@ function testAttack:new()
   self._index = self
   return setmetatable(dummyVals, self)
 end
-
 
 local testHeal = {}
 function testHeal:new()
@@ -133,9 +129,6 @@ function testHeal:new()
   return setmetatable(dummyVals, self)
 end
 
-
-
-
 local dummySkill = {}
 function dummySkill(e)
   local tmp = {
@@ -156,7 +149,6 @@ function dummySkill(e)
     name = e.name
   }
 
-
   if e.state == GameLib.CodeEnumCombatResult.Critical then
     tmp.damage = tmp.damage * 2
     tmp.heal = tmp.heal * 2
@@ -166,22 +158,15 @@ function dummySkill(e)
   return tmp
 end
 
-
-
-
-
-
-
 testFight:addUnit(testUnit, true)
 -- add skills to units
 
-for _k, unit in pairs(testFight.groupMembers) do
+for _, unit in next, testFight.groupMembers do
   for i = 1, 100 do
     unit:addSkill(dummySkill(testAttack:new()))
     unit:addSkill(dummySkill(testHeal:new()))
   end
 end
-
 
 _G.DarkMeter.testData = function()
   DarkMeter:addFightToArchive(testFight)

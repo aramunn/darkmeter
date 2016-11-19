@@ -10,8 +10,6 @@ local UI
 local DarkMeter
 local DMUtils
 
-
-
 function SettingsForm:init(xmlDoc)
   self.xmlDoc = xmlDoc
   UI = Apollo.GetPackage("DarkMeter:UI").tPackage
@@ -27,13 +25,54 @@ function SettingsForm:init(xmlDoc)
     SettingsForm.rowHeightBox = SettingsForm.buttons:FindChild("RowHeight"):FindChild("RowHeightBox")
     SettingsForm.bgOpacitySlider = SettingsForm.buttons:FindChild("BgOpacity"):FindChild("Slider"):FindChild("SliderBar")
     SettingsForm.bgOpacityBox = SettingsForm.buttons:FindChild("BgOpacity"):FindChild("BgOpacityBox")
-
+    self:DropdownInit()
     SettingsForm.form:Show(false)
   else
     Apollo.AddAddonErrorText(DarkMeter, "Cannot initialize SettingsForm, xmlDoc is nil or not loaded.")
   end
 end
 
+function SettingsForm.controls:OnProfileSelectionChanged(wndH)
+  local data = wndH:GetData()
+  SettingsForm.buttons:FindChild("ProfileDropdownContainer"):Show(false)
+  DarkMeter.settings.selectedStats = nil
+  local newStats = DarkMeter.settings.profiles[data]
+  DarkMeter.settings.selectedStats = newStats
+  DarkMeter.settings.currentProfile = data
+  SettingsForm.form:FindChild("ProfileName"):SetText(data)
+  SettingsForm:ReloadStats()
+end
+
+function SettingsForm:ReloadStats()
+  SettingsForm:createDraggableBoxes()
+  DarkMeter:reloadTracked()
+end
+
+function SettingsForm.controls:OnSaveProfile()
+  local profileEditName = SettingsForm.form:FindChild("ProfileName"):GetText()
+  DarkMeter.settings.profiles[profileEditName] = DarkMeter.settings.selectedStats
+  SettingsForm:reinitUI()
+  self:DropdownInit()
+end
+
+function SettingsForm.controls:OnDeleteProfile()
+  local profileEditName = SettingsForm.form:FindChild("ProfileName"):GetText()
+  DarkMeter.settings.profiles[profileEditName] = nil
+  SettingsForm:reinitUI()
+  self:DropdownInit()
+end
+
+function SettingsForm:DropdownInit()
+  --local testProfiles = {"Profile 1", "DPS", "HEAL", "HEAL2", "HEAL3", "HEAL5", "Bullshit", "Lulz"}
+  local dropDownContainer = SettingsForm.form:FindChild("ProfileDropdownList")
+
+  for profileName, _ in next, DarkMeter.settings.profiles do
+    local dropdownForm = Apollo.LoadForm(self.xmlDoc, "DropdownSelectionForm", dropDownContainer, SettingsForm.controls)
+    dropdownForm:FindChild("Text"):SetText(profileName)
+    dropdownForm:FindChild("ChangeSelection"):SetData(profileName)
+  end
+  dropDownContainer:ArrangeChildrenVert()
+end
 
 -- reinit mainform columns and rows
 function SettingsForm:reinitUI()
@@ -51,11 +90,19 @@ function SettingsForm:reinitUI()
   end
 end
 
-
+function SettingsForm.controls:OnColumnDropDown()
+  SettingsForm.buttons:FindChild("ProfileDropdownContainer"):Show(true)
+end
 
 function SettingsForm.controls:OnMergePets()
   local btn = SettingsForm.buttons:FindChild("MergePets")
   DarkMeter.settings.mergePets = btn:IsChecked()
+  SettingsForm:reinitUI()
+end
+
+function SettingsForm.controls:OnPlebMode()
+  local btn = SettingsForm.buttons:FindChild("PlebMode")
+  DarkMeter.settings.sortMode = btn:IsChecked()
   SettingsForm:reinitUI()
 end
 
@@ -97,7 +144,6 @@ function SettingsForm.controls:OnMergeDots()
   end
 end
 
-
 function SettingsForm.controls:OnMapChangeReset(wndH, wndC, eBtn)
   if wndH == wndC then
     -- value can be 1 (always), 2 (ask), 3 (never)
@@ -114,7 +160,6 @@ function SettingsForm.controls:OnBarHeightChanged(wndH, wndC, fNewVal, fOldVal)
   SettingsForm:reinitUI()
 end
 
-
 function SettingsForm.controls:OnBarHeightBoxChanged(wndH, wndC, sVal)
   local val = tonumber(sVal)
   if val ~= nil then
@@ -129,7 +174,6 @@ function SettingsForm.controls:OnBarHeightBoxChanged(wndH, wndC, sVal)
   SettingsForm:reinitUI()
 end
 
-
 -- bg opacity functions
 function SettingsForm.controls:OnBgOpacityChanged(wndH, wndC, fNewVal, fOldVal)
   local val = math.floor(fNewVal)
@@ -137,7 +181,6 @@ function SettingsForm.controls:OnBgOpacityChanged(wndH, wndC, fNewVal, fOldVal)
   DarkMeter.settings.bgOpacity = val
   UI.MainForm.content:SetBGOpacity(DarkMeter.settings.bgOpacity/100)
 end
-
 
 function SettingsForm.controls:OnBgOpacityBoxChanged(wndH, wndC, sVal)
   local val = tonumber(sVal)
@@ -152,7 +195,6 @@ function SettingsForm.controls:OnBgOpacityBoxChanged(wndH, wndC, sVal)
   SettingsForm.bgOpacitySlider:SetValue(val)
   UI.MainForm.content:SetBGOpacity(DarkMeter.settings.bgOpacity/100)
 end
-
 
 -------------------------------------------------------------
 -- Display functions
@@ -169,7 +211,7 @@ function SettingsForm:show()
 
     local left = (screenWidth - winWidth)/2
     local top = (screenHeight - winHeight)/2
- 
+
     self.form:Move( left, top, winWidth, winHeight )
     self:setValuesFromSettings()
     self:createDraggableBoxes()
@@ -185,7 +227,6 @@ function SettingsForm:hide()
   end
 end
 
-
 -- just closes the settings form
 function SettingsForm.controls:OnCancel()
   SettingsForm:hide()
@@ -199,23 +240,21 @@ function SettingsForm:setValuesFromSettings()
   self.buttons:FindChild("MergePvPFights"):SetCheck(DarkMeter.settings.mergePvpFights)
   self.buttons:FindChild("ShortNumberFormat"):SetCheck(DarkMeter.settings.shortNumberFormat)
   self.buttons:FindChild("MergeDots"):SetCheck(DarkMeter.settings.mergeDots)
+  self.buttons:FindChild("PlebMode"):SetCheck(DarkMeter.settings.sortMode)
   self.buttons:FindChild("ResetFightBox"):FindChild("ResetFight" .. DarkMeter.settings.resetMapChange):SetCheck(true)
   self.rowHeightSlider:SetValue(DarkMeter.settings.rowHeight)
   self.rowHeightBox:SetText(DarkMeter.settings.rowHeight)
   self.bgOpacitySlider:SetValue(DarkMeter.settings.bgOpacity)
   self.bgOpacityBox:SetText(DarkMeter.settings.bgOpacity)
+  SettingsForm.form:FindChild("ProfileName"):SetText(DarkMeter.settings.currentProfile)
 end
-
-
-
-
 
 -------------------------------------------------------------
 -- Drag and drop functions
 -------------------------------------------------------------
 
-
 function SettingsForm:createDraggableBoxes()
+  print ("ok")
   local stats = DarkMeter.availableStats
   -- destroy old boxes
   for _, box in pairs(SettingsForm.boxes.tracked) do
@@ -224,7 +263,7 @@ function SettingsForm:createDraggableBoxes()
   for _, box in pairs(SettingsForm.boxes.untracked) do
     box:Destroy()
   end
-  
+
   SettingsForm.boxes.tracked = {}
   SettingsForm.boxes.untracked = {}
 
@@ -268,7 +307,6 @@ function SettingsForm:createBox(stat)
   box:SetText( DMUtils:titleForStat(stat, false) )
   box:SetData(stat)
 
-
   if statTracked then
     local index = 0
     for j = 0, #DarkMeter.settings.selectedStats do
@@ -284,7 +322,6 @@ function SettingsForm:createBox(stat)
     table.insert(SettingsForm.boxes.untracked, box)
   end
 end
-
 
 -------------------------------------------------------------
 -- Drag buttons
@@ -315,7 +352,7 @@ end
 
 function SettingsForm.boxControls:OnStopDrag()
   SettingsForm.boxControls.dragging = false
-  
+
   local x, y = SettingsForm.boxControls.draggingBox:GetAnchorOffsets()
   local midX = x + ( SettingsForm.boxControls.draggingBox:GetWidth() / 2 )
   local midY = y + ( SettingsForm.boxControls.draggingBox:GetHeight() / 2 )
@@ -335,7 +372,7 @@ function SettingsForm.boxControls:OnStopDrag()
     -- The animation is not showing because I redraw every single box, I'll just comment for now
     -- SettingsForm.boxControls.draggingBox:TransitionMove(SettingsForm.boxControls.startLocation, 0.25)
   end
-  
+
   SettingsForm.boxControls.clone:Destroy()
   SettingsForm.boxControls.clone = nil
 
@@ -348,17 +385,16 @@ end
 function SettingsForm.boxControls:OnMouseMove()
   if SettingsForm.boxControls.dragging and SettingsForm.boxControls.draggingBox then
     local mousePos = Apollo.GetMouse()
-    
+
     local newOffsetX = mousePos.x - SettingsForm.boxControls.mousePosition.x + SettingsForm.boxControls.startPosition.x
     local newOffsetY = mousePos.y - SettingsForm.boxControls.mousePosition.y + SettingsForm.boxControls.startPosition.y
-    
+
     SettingsForm.boxControls.draggingBox:SetAnchorOffsets(newOffsetX, newOffsetY, (newOffsetX + SettingsForm.boxControls.draggingBox:GetWidth()), (newOffsetY + SettingsForm.boxControls.draggingBox:GetHeight()) )
     local index, container = SettingsForm.boxControls:draggingBoxPosition()
     SettingsForm.boxControls.draggingIndex = index
     SettingsForm.boxControls:moveShadowTo(index, container)
   end
 end
-
 
 function SettingsForm.boxControls:moveToPos(box, i, tracked)
   SettingsForm.boxWidth = box:GetWidth()
@@ -370,7 +406,6 @@ function SettingsForm.boxControls:moveToPos(box, i, tracked)
   box:SetAnchorOffsets(left, top, (left + SettingsForm.boxWidth), (top + SettingsForm.boxHeight))
 end
 
-
 function SettingsForm.boxControls:createShadowClone(box)
   local location = box:GetLocation()
   local parent = box:GetParent()
@@ -381,7 +416,6 @@ function SettingsForm.boxControls:createShadowClone(box)
   clone:MoveToLocation(location)
   return clone
 end
-
 
 function SettingsForm.boxControls:draggingBoxPosition()
   local container
@@ -406,7 +440,6 @@ function SettingsForm.boxControls:draggingBoxPosition()
 
 end
 
-
 function SettingsForm.boxControls:moveShadowTo(index, container)
   if SettingsForm.boxControls.clone ~= nil then
     local name = string.lower(container:GetName())
@@ -429,24 +462,14 @@ function SettingsForm.boxControls:moveShadowTo(index, container)
         end
         SettingsForm.boxControls:moveToPos(boxes[i], (pos - 1), (name == "tracked") )
       end
-      
+
     end
 
   end
 end
 
-
 -------------------------------------------------------------
 -- End drag and drop functions
 -------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
 Apollo.RegisterPackage(SettingsForm, "DarkMeter:SettingsForm", 1, {"DarkMeter:UI"})

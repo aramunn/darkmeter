@@ -3,7 +3,7 @@
 -------------------------------------------------------------
 local MainForm = {}
 MainForm.controls = {}
-MainForm.rows = {}              -- list with all the rows inside the addon window
+MainForm.rows = {} -- list with all the rows inside the addon window
 MainForm.cols = {}
 
 local DarkMeter
@@ -11,16 +11,18 @@ local UI
 local DMUtils
 local Fight
 local LockWindow
+local next = next
 
 -- initialize main window
 function MainForm:init(xmlDoc)
+  self.xmlDoc = xmlDoc
   UI = Apollo.GetPackage("DarkMeter:UI").tPackage
   Fight = Apollo.GetPackage("DarkMeter:Fight").tPackage
   DMUtils = Apollo.GetPackage("DarkMeter:Utils").tPackage
   DarkMeter = Apollo.GetAddon("DarkMeter")
 
-  MainForm.form = Apollo.LoadForm(xmlDoc, "DarkMeterForm", nil, MainForm.controls)
-  MainForm.tooltip = Apollo.LoadForm(xmlDoc, "TooltipForm", nil, MainForm.tooltipControls)
+  MainForm.form = Apollo.LoadForm(self.xmlDoc, "DarkMeterForm", nil, MainForm.controls)
+  MainForm.tooltip = Apollo.LoadForm(self.xmlDoc, "TooltipForm", nil, MainForm.tooltipControls)
   MainForm.tooltip:Show(false)
 
   -- set main parts
@@ -29,6 +31,8 @@ function MainForm:init(xmlDoc)
   self.content = self.wrapper:FindChild("Content")
   self.mainCol = self.content:FindChild("MainCol")
   self.footer = self.form:FindChild("Footer")
+  self.dropDown = self.form:FindChild("DropDown")
+  self.dropDownContainer = self.dropDown:FindChild("DropProfile")
 
   -- header parts
   self.title = self.header:FindChild("Title")
@@ -46,16 +50,26 @@ function MainForm:init(xmlDoc)
   MainForm:initColumns()
   self:setTracked()
   self:setCaptureBtn()
-  UI:show()  
+  UI:show()
+  MainForm:DropdownInit()
 end
 
+function MainForm.controls:OnProfileSelectionChanged(wndH)
+
+  local data = wndH:GetData()
+  MainForm.dropDown:Show(false)
+  DarkMeter.settings.selectedStats = nil
+  local newStats = DarkMeter.settings.profiles[data]
+  DarkMeter.settings.selectedStats = newStats
+  DarkMeter.settings.currentProfile = data
+  DarkMeter:reloadTracked()
+end
 
 -- closes the main window, all subwindows and remove event listeners
 function MainForm.controls:OnCancel()
   DarkMeter:pause()
   UI:hide()
 end
-
 
 -- shows the dialog to confirm data reset
 function MainForm.controls:OnResetData()
@@ -77,48 +91,45 @@ end
 
 function MainForm.controls:OnStartDrag()
   if not LockWindow then
-	  MainForm.dragging = true
-	  local mousePos = Apollo.GetMouse()
-	  MainForm.controls.mousePosition = {
-		x = mousePos.x,
-		y = mousePos.y
-	  }
+    MainForm.dragging = true
+    local mousePos = Apollo.GetMouse()
+    MainForm.controls.mousePosition = {
+      x = mousePos.x,
+      y = mousePos.y
+    }
 
-	  local x, y = MainForm.form:GetAnchorOffsets()
-	  local width = MainForm.form:GetWidth()
-	  local height = MainForm.form:GetHeight()
-	  MainForm.controls.startPosition = {
-		x = x,
-		y = y,
-		width = width,
-		height = height
-	  }
+    local x, y = MainForm.form:GetAnchorOffsets()
+    local width = MainForm.form:GetWidth()
+    local height = MainForm.form:GetHeight()
+    MainForm.controls.startPosition = {
+      x = x,
+      y = y,
+      width = width,
+      height = height
+    }
   end
 end
 
 function MainForm.controls:OnStopDrag()
   if not LockWindow then
-	MainForm.dragging = false
+    MainForm.dragging = false
   end
 end
 
 function MainForm.controls:OnMouseMove(wndH, wndC)
   if not LockWindow then
-	  if MainForm.dragging and wndH == wndC then
-		local mousePos = Apollo.GetMouse()
-		
-		local newOffsetX = mousePos.x - MainForm.controls.mousePosition.x + MainForm.controls.startPosition.x
-		local newOffsetY = mousePos.y - MainForm.controls.mousePosition.y + MainForm.controls.startPosition.y
+    if MainForm.dragging and wndH == wndC then
+      local mousePos = Apollo.GetMouse()
 
-		MainForm.form:SetAnchorOffsets(newOffsetX, newOffsetY, (newOffsetX + MainForm.controls.startPosition.width), (newOffsetY + MainForm.controls.startPosition.height) )
-	  end
+      local newOffsetX = mousePos.x - MainForm.controls.mousePosition.x + MainForm.controls.startPosition.x
+      local newOffsetY = mousePos.y - MainForm.controls.mousePosition.y + MainForm.controls.startPosition.y
+
+      MainForm.form:SetAnchorOffsets(newOffsetX, newOffsetY, (newOffsetX + MainForm.controls.startPosition.width), (newOffsetY + MainForm.controls.startPosition.height) )
+    end
   end
 end
 
 -- end drag window functions
-
-
-
 
 -- popup to select which fight the user wanna see (overall, current and a list of the past fights)
 function MainForm.controls:OnSelectFight()
@@ -127,18 +138,32 @@ end
 
 -- lock the window
 function MainForm.controls:OnLockWindow()
-	if LockWindow then
-		MainForm.form:SetStyle("Moveable", LockWindow)
-		MainForm.form:SetStyle("Sizable", LockWindow)
-		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now unlocked", "DarkMeter")
-		LockWindow = false
-	else
-		MainForm.form:SetStyle("Moveable", LockWindow)
-		MainForm.form:SetStyle("Sizable", LockWindow)
-		ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now locked", "DarkMeter")
-		LockWindow = true
-	end
-	DarkMeter.settings.lockWindow = LockWindow
+  if LockWindow then
+    MainForm.form:SetStyle("Moveable", LockWindow)
+    MainForm.form:SetStyle("Sizable", LockWindow)
+    ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now unlocked", "DarkMeter")
+    LockWindow = false
+  else
+    MainForm.form:SetStyle("Moveable", LockWindow)
+    MainForm.form:SetStyle("Sizable", LockWindow)
+    ChatSystemLib.PostOnChannel(ChatSystemLib.ChatChannel_System, "Darkmeter window is now locked", "DarkMeter")
+    LockWindow = true
+  end
+  DarkMeter.settings.lockWindow = LockWindow
+end
+
+function MainForm.controls:OnCycleColumns()
+  MainForm.dropDown:Show(true)
+end
+
+function MainForm:DropdownInit()
+  for profileName, _ in next, DarkMeter.settings.profiles do
+    local dropdownForm = Apollo.LoadForm(MainForm.xmlDoc, "DropdownSelectionForm", self.dropDownContainer, MainForm.controls)
+    dropdownForm:FindChild("Text"):SetText(profileName)
+    dropdownForm:FindChild("ChangeSelection"):SetData(profileName)
+
+  end
+  self.dropDownContainer:ArrangeChildrenVert()
 end
 
 -- popup to edit the general settings
@@ -150,9 +175,6 @@ end
 function MainForm.controls:OnReportFight()
   UI.ReportForm:show()
 end
-
-
-
 
 -- popup to report the inspected fight
 function MainForm.controls:OnPause()
@@ -166,7 +188,6 @@ function MainForm.controls:OnResume()
   MainForm.pauseBtn:Show(true)
   MainForm.resumeBtn:Show(false)
 end
-
 
 -- changes mode between always / in combat
 function MainForm.controls:OnCaptureModeChange()
@@ -184,30 +205,27 @@ function MainForm:setCaptureBtn()
   end
 end
 
-
 function MainForm:LoadSettings()
   LockWindow = DarkMeter.settings.lockWindow
 end
-
 
 -------------------------------------------------------------
 -- Display Utility functions
 -------------------------------------------------------------
 
-
 -- mainform columns initialization or update
 -- sets title, creates columns, prepare columns variables...
 function MainForm:initColumns()
-  
+
   -- Don't give a shit anymore, by this time we know all settings are loaded
   self.LoadSettings()
-  
+
   self.contentWidth = self.content:GetWidth()
   self.colWidth = {}
 
   local rowHeight = DarkMeter.settings.rowHeight
   local stats = DarkMeter.settings.selectedStats
-  local rowsQt = 0 
+  local rowsQt = 0
   if UI.lastFight and stats[1] then
     rowsQt = #UI.lastFight:orderMembersBy(stats[1])
   end
@@ -223,7 +241,6 @@ function MainForm:initColumns()
     local otherColsWidth = UI.minColWidth
     local nWrapperHeight = MainForm.wrapper:GetHeight()
     local nWrapperWidth = MainForm.wrapper:GetWidth()
-
 
     for i = 1, #stats do
       if self.cols[i] == nil then
@@ -241,26 +258,26 @@ function MainForm:initColumns()
       local colHeight = math.max(nWrapperHeight, rowsHeight)
 
       if i == 1 then -- set container position only once
-        local left, top, right, bot = MainForm.content:GetAnchorOffsets()
+        local left, top, _, _ = MainForm.content:GetAnchorOffsets()
         MainForm.content:SetAnchorOffsets(left, top, (left + nWrapperWidth - 13), (top + colHeight) )
       end
       -- sets column position and size
       self.cols[i].column:SetAnchorOffsets(left, 0, (left + colWidth), colHeight)
 
       -- save current col width, used to calculate row width based on % of stat contribution
-      self.colWidth[i] = self.cols[i].column:GetWidth()  
+      self.colWidth[i] = self.cols[i].column:GetWidth()
     end
     -- creates or updates columns headers
     MainForm:createTitles()
 
-  -- if no stats are selected, just display a message
+    -- if no stats are selected, just display a message
   else
     local colHeight = MainForm.wrapper:GetHeight()
     local x, y = MainForm.content:GetAnchorOffsets()
     MainForm.content:SetAnchorOffsets(x, y, (x + MainForm.wrapper:GetWidth() - 13), (y + colHeight) )
     MainForm.content:SetText("No Stats Selected")
   end
-    
+
   -- delete no longer needed columns
   for i = #stats + 1, #self.cols do
     if self.cols[i].column then
@@ -270,22 +287,21 @@ function MainForm:initColumns()
   end
 end
 
-
 -- update columns height, called when a row is added or removed
 function MainForm:updateColsHeight()
   local nRowHeight = DarkMeter.settings.rowHeight
   local nWrapperHeight = MainForm.wrapper:GetHeight()
   local nColHeight = 0 -- set holheight here to have a reference later and set container's height
 
-  for _, col in pairs(MainForm.cols) do
+  for _, col in next, MainForm.cols do
     local nRows = #col.rows
     local nTotalRowsHeight = ( (1 + nRowHeight) * (nRows + 1) )
     nColHeight = math.max(nWrapperHeight, nTotalRowsHeight)
-    local left, top, right, bot = col.column:GetAnchorOffsets()
+    local left, top, right, _ = col.column:GetAnchorOffsets()
     col.column:SetAnchorOffsets(left, top, right, (top + nColHeight))
   end
   -- set columns container height
-  local left, top, right, bot = MainForm.content:GetAnchorOffsets()
+  local left, top, right, _ = MainForm.content:GetAnchorOffsets()
   MainForm.content:SetAnchorOffsets(left, top, right, (top + nColHeight) )
 
   self.wrapper:RecalculateContentExtents()
@@ -298,7 +314,6 @@ function MainForm:createTitles()
   end
 end
 
-
 -- create or update a specific title given a column index
 function MainForm:createTitleForStat(i)
   local stats = DarkMeter.settings.selectedStats
@@ -307,19 +322,17 @@ function MainForm:createTitleForStat(i)
   if self.cols[i].header == nil then
     self.cols[i].header = UI.Row:new(self.cols[i].column, 1)
   end
-  
+
   -- update title with the correct infos
   MainForm.cols[i].header:update({
-    icon = false,
-    rank = false,
-    name = i == 1 and "Name" or false,
-    background = false,
-    text = DMUtils:titleForStat(stats[i], (i ~= 1)),
-    width = self.colWidth[i]
-  })
+      icon = false,
+      rank = false,
+      name = i == 1 and "Name" or false,
+      background = false,
+      text = DMUtils:titleForStat(stats[i], (i ~= 1)),
+      width = self.colWidth[i]
+    })
 end
-
-
 
 -- returns the options to update a single bar texts, icons, color, data etc...
 function MainForm:formatRowOptions(unit, column, rank, maxVal, fightStat)
@@ -358,7 +371,7 @@ function MainForm:formatRowOptions(unit, column, rank, maxVal, fightStat)
     options.icon = false
     options.name = false
   end
-  
+
   -- set background
   options.background = ApolloColor.new("99555555")
   if DMUtils.classes[unit.classId] ~= nil then
@@ -366,11 +379,10 @@ function MainForm:formatRowOptions(unit, column, rank, maxVal, fightStat)
     options.background = ApolloColor.new(bg[1], bg[2], bg[3], 0.3)
   end
 
-
   --| update bar data | --
-  
+
   local value = unit[stats[column]](unit)
-  
+
   -- sets bar text
   local num = DMUtils.formatNumber( value, 0 , DarkMeter.settings.shortNumberFormat )
   -- enable percentage only for the first column, if the value is bigger than 0 and is not the DPS stat
@@ -380,7 +392,7 @@ function MainForm:formatRowOptions(unit, column, rank, maxVal, fightStat)
   else
     options.text = num
   end
-  
+
   -- sets bar width
   if column == 1 and maxVal > 0 then
     local percentage = value / maxVal * 100
@@ -401,7 +413,7 @@ end
 function MainForm:clear()
   if MainForm.cols then
     for index = 1, #MainForm.cols do
-      
+
       if MainForm.cols[index].rows then
         for i = 1, #MainForm.cols[index].rows do
           MainForm.cols[index].rows[i].bar:Destroy()
@@ -415,7 +427,7 @@ end
 
 -- sets the current tracked fight
 function MainForm:setTracked()
-  local text = ""
+  local text
   if DarkMeter and DarkMeter.initialized then
     if DarkMeter.settings.overall then
       text = "- Overall"
@@ -438,7 +450,7 @@ function MainForm:showGroupStats()
     -- sort all group members by the main stat being monitored
     local orderedUnits = UI.lastFight:orderMembersBy(stats[1])
     -- local maxVal = orderedUnits[1][stats[1]](orderedUnits[1]) -- the first (highest) value of the stats passes, used to calculate bar width for others party members
-    
+
     for index = 1, #stats do
       -- calculate max stat among group members
       local maxVal = 0
@@ -454,7 +466,7 @@ function MainForm:showGroupStats()
       for i = 1, #orderedUnits do
         if MainForm.cols[index].rows[i] == nil then
           MainForm.cols[index].rows[i] = UI.Row:new(MainForm.cols[index].column, i + 1)
-          rowsNumberChanged = true --  a new row has been added and I need to recalculate col heights
+          rowsNumberChanged = true -- a new row has been added and I need to recalculate col heights
         end
         local options = MainForm:formatRowOptions(orderedUnits[i], index, i, maxVal, fightStat)
         MainForm.cols[index].rows[i]:update(options)
@@ -469,7 +481,7 @@ function MainForm:showGroupStats()
           MainForm.cols[i].rows[index].bar:Destroy()
           MainForm.cols[i].rows[index] = nil
         end
-        rowsNumberChanged = true --  one or more rows has been removed and I need to recalculate col heights
+        rowsNumberChanged = true -- one or more rows has been removed and I need to recalculate col heights
       end
     end
 
@@ -480,16 +492,14 @@ function MainForm:showGroupStats()
   else
     MainForm:clear()
   end
-
-
-  UI.MainForm.totalDpsValue:SetText(DMUtils.formatNumber(UI.lastFight:dps(), 0, DarkMeter.settings.shortNumberFormat))
+  if(UI.lastFight ~= nil) then
+    UI.MainForm.totalDpsValue:SetText(DMUtils.formatNumber(UI.lastFight:dps(), 0, DarkMeter.settings.shortNumberFormat))
+  end
   UI.lastUpdate = GameLib.GetGameTime()
 end
 
-
-
 -------------------------------------------------------------
--- MainForm row hover functions 
+-- MainForm row hover functions
 -------------------------------------------------------------
 
 MainForm.tooltipControls = {}
@@ -522,8 +532,6 @@ function MainForm.tooltipControls:move(x, y)
   end
 end
 
-
-
 -- set tooltip window text
 function MainForm.tooltipControls:setText(lines)
   -- sets header
@@ -546,17 +554,16 @@ function MainForm.tooltipControls:setText(lines)
   end
 end
 
-
 -- handles mouseenter on rows, builds the data to show into the tooltip window and shows it
-function MainForm.controls:OnRowMouseEnter(wndH, wndC, x, y)
+function MainForm.controls:OnRowMouseEnter(wndH, wndC, _, _)
   if wndH == wndC then
     local data = wndH:GetData()
     -- find unit
     local unit = nil
-      
+
     if data.pet then
-      for id, u in pairs(UI.lastFight.groupMembers) do
-        for petName, petUnit in pairs(u.pets) do
+      for _, u in next, UI.lastFight.groupMembers do
+        for petName, petUnit in next, u.pets do
           if data.name == petName then
             unit = petUnit
             break
@@ -589,7 +596,7 @@ function MainForm.controls:OnRowMouseEnter(wndH, wndC, x, y)
           end
         end
 
-      -- now for the other stats ...
+        -- now for the other stats ...
       else
         local skills = unit[stat.."Skills"](unit)
 
@@ -599,7 +606,7 @@ function MainForm.controls:OnRowMouseEnter(wndH, wndC, x, y)
           if skill then
             local skillValue = skill:dataFor(stat)
             local percentage = DMUtils.roundToNthDecimal( (skillValue / totalStat * 100), 1)
-            
+
             lines[i] = percentage .. "%" .. " - " .. skill.name
             if skill.ownerName then
               lines[i] = lines[i] .. " (" .. skill.casterName .. ")"
@@ -613,7 +620,7 @@ function MainForm.controls:OnRowMouseEnter(wndH, wndC, x, y)
       local totalTop = 0
       local win = wndH
       while win do
-        local left, top, right, bottom = win:GetAnchorOffsets()
+        local _, top, _, _ = win:GetAnchorOffsets()
         totalTop = totalTop + top
         win = win:GetParent()
       end
@@ -627,30 +634,28 @@ function MainForm.controls:OnRowMouseEnter(wndH, wndC, x, y)
   end
 end
 
-function MainForm.controls:OnRowMouseMove(wndH, wndC, x, y)
+function MainForm.controls:OnRowMouseMove(wndH, wndC, _, _)
   if wndH == wndC then
     local mousePos = Apollo.GetMouse()
     MainForm.tooltipControls:move(mousePos.x, false)
   end
 end
 
-
-function MainForm.controls:OnRowMouseExit(wndH, wndC, x, y)
+function MainForm.controls:OnRowMouseExit(wndH, wndC, _, _)
   if wndH == wndC then
     MainForm.tooltipControls:hide()
-  end  
+  end
 end
 
-
-function MainForm.controls:OnRowPlayerDetails(wndH, wndC, mouseBtn, x, y)
+function MainForm.controls:OnRowPlayerDetails(wndH, wndC, mouseBtn, _, _)
   if wndH == wndC and mouseBtn == 0 and UI.lastFight then
     local data = wndH:GetData()
     if data ~= nil then
       local unit = nil
-      
+
       if data.pet then
-        for id, u in pairs(UI.lastFight.groupMembers) do
-          for petName, petUnit in pairs(u.pets) do
+        for _, u in next, UI.lastFight.groupMembers do
+          for petName, petUnit in next, u.pets do
             if data.name == petName then
               unit = petUnit
               break
@@ -668,9 +673,5 @@ function MainForm.controls:OnRowPlayerDetails(wndH, wndC, mouseBtn, x, y)
     end
   end
 end
-
-
-
-
 
 Apollo.RegisterPackage(MainForm, "DarkMeter:MainForm", 1, {"DarkMeter:UI"})

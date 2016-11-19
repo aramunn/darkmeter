@@ -1,4 +1,3 @@
-
 -------------------------------------------------------------
 -- Fight class
 -------------------------------------------------------------
@@ -16,6 +15,7 @@ local Skill = Apollo.GetPackage("DarkMeter:Skill").tPackage
 local DMUtils = Apollo.GetPackage("DarkMeter:Utils").tPackage
 local DarkMeter
 local fightsTableIndex = 0
+local next = next
 
 function Fight:new()
   if DarkMeter == nil then
@@ -23,11 +23,11 @@ function Fight:new()
   end
   fightsTableIndex = fightsTableIndex + 1
 
-	local fight = {}
+  local fight = {}
   fight.groupMembers = {}
   fight.enemies = {}
   fight.startTime = GameLib.GetGameTime()
-  fight.forcedName = nil            -- this is used to force a fight name like "Current fight" or "Overall data"
+  fight.forcedName = nil -- this is used to force a fight name like "Current fight" or "Overall data"
   fight.totalDuration = 0
   fight.pvpMatch = false
   fight.id = fightsTableIndex
@@ -36,16 +36,17 @@ function Fight:new()
   fight.healingDoneTotal = 0
   fight.overhealDoneTotal = 0
   fight.interruptsTotal = 0
+  fight.absorbsDoneTotal = 0
+  fight.absorbsTakenTotal = 0
   fight.damageTakenTotal = 0
   fight.deathsTotal = 0
 
-	self.__index = self
+  self.__index = self
   setmetatable(fight, self)
 
   DarkMeter.fights[fight.id] = fight
-	return fight
+  return fight
 end
-
 
 -- adds an unit to the current fight
 -- groupMember is a boolean, if true the unit is added to the friendly units, if false is added to the enemies
@@ -63,7 +64,7 @@ function Fight:addUnit(wsUnit, groupMember)
     -- this also is used when changing zones...
     -- tldr... merge groupMembers that are not pets with the same name
     if groupMember and not wsUnit:GetUnitOwner() then
-      for id, unit in pairs(self.groupMembers) do
+      for id, unit in next, self.groupMembers do
         if unit.name == unitName then
           -- -- create a new unit that is the clone of the previous unit with the same name
           local newUnit = DMUtils.cloneTable(unit)
@@ -107,19 +108,18 @@ function Fight:stop()
     self.endTime = GameLib.GetGameTime()
     self.totalDuration = self.totalDuration + (self.endTime - self.startTime)
 
-    for id, unit in pairs(self.groupMembers) do
+    for _, unit in next, self.groupMembers do
       unit:stopFight()
     end
   end
 end
-
 
 -- continue a fight, used to keep adding time to the overall fight between combats
 function Fight:continue()
   if self.endTime then
     self.startTime = GameLib.GetGameTime()
     self.endTime = nil
-    for id, unit in pairs(self.groupMembers) do
+    for _, unit in next, self.groupMembers do
       unit:startFight()
     end
   end
@@ -129,8 +129,7 @@ function Fight:paused()
   return self.startTime and self.endTime
 end
 
-
-local stats = {"damageDone", "healingDone", "overhealDone", "interrupts", "damageTaken", "deaths"}
+local stats = {"damageDone", "healingDone", "overhealDone", "interrupts", "absorbsDone", "absorbsTaken", "damageTaken", "deaths"}
 
 for i = 1, #stats do
   Fight[stats[i]] = function(self)
@@ -138,11 +137,15 @@ for i = 1, #stats do
   end
 end
 
-
 function Fight:rawhealDone()
   return self:healingDone() + self:overhealDone()
 end
 
+function Fight:absorbHealingDone()
+  SendVarToRover("Absorb", self:absorbsDone())
+  SendVarToRover("Healing", self:healingDone())
+  return self:healingDone() + self:absorbsDone()
+end
 
 function Fight:dps()
   local total = 0
@@ -150,7 +153,7 @@ function Fight:dps()
   if self:duration() > 0 then
     duration = self:duration()
   end
-  for id, unit in pairs(self.groupMembers) do
+  for _, unit in next, self.groupMembers do
     total = total + unit:damageDone()
   end
   return total / duration
@@ -162,12 +165,11 @@ function Fight:hps()
   if self:duration() > 0 then
     duration = self:duration()
   end
-  for id, unit in pairs(self.groupMembers) do
+  for _, unit in next, self.groupMembers do
     total = total + unit:healingDone()
   end
   return total / duration
 end
-
 
 -- return an ordered list of all party members ordered by the diven stats
 function Fight:orderMembersBy(stat)
@@ -175,28 +177,33 @@ function Fight:orderMembersBy(stat)
     error("Cannot order fight members by " .. stat .. " Unit class doesn't have such method")
   end
 
-  local function sortFunct(a, b)
+  local function sortNormal(a, b)
     return a[stat](a) > b[stat](b)
   end
 
+  local function sortPleb(a, b)
+    return a[stat](a) < b[stat](b)
+  end
+
   local tmp = {}
-  for id, unit in pairs(self.groupMembers) do
+  for _, unit in next, self.groupMembers do
     tmp[#tmp + 1] = unit
     if not DarkMeter.settings.mergePets then
-      for name, pet in pairs(unit.pets) do
+      for _, pet in next, unit.pets do
         tmp[#tmp + 1] = pet
       end
     end
   end
+
   if #tmp > 1 then
-    table.sort(tmp, sortFunct)
+    if not DarkMeter.settings.sortMode then
+      table.sort(tmp, sortNormal)
+    else
+      table.sort(tmp, sortPleb)
+    end
   end
   return tmp
 end
-
-
-
-
 
 -- returns the name of the most significative enemies
 function Fight:name()
@@ -204,7 +211,7 @@ function Fight:name()
     return self.forcedName
   end
   local topUnit = nil
-  for _, unit in pairs(self.enemies) do
+  for _, unit in next, self.enemies do
     topUnit = topUnit or unit
     -- TODO
     -- I've implemented this part because in some fights vs some real mobs, I've found my own name as the fight's name

@@ -1,34 +1,40 @@
-
 local Skill = {}
 local DMUtils = Apollo.GetPackage("DarkMeter:Utils").tPackage
 local DarkMeter
+local next = next
 
 -- skill result codes
 local deflectCode = GameLib.CodeEnumCombatResult.Avoid
 local critCode = GameLib.CodeEnumCombatResult.Critical
 local hitCode = GameLib.CodeEnumCombatResult.Hit
 
-
 function Skill:new()
   if DarkMeter == nil then
-    DarkMeter = Apollo.GetAddon("DarkMeter")    
+    DarkMeter = Apollo.GetAddon("DarkMeter")
   end
   local initialValues = {
     name = "",
-    fightId = nil,              -- key to retrieve the fight that this skill belongs to in the table DarkMeter.fights
-    unitId = nil,               -- key to retrieve the unit that this skill belongs to in the table DarkMeter.units
-    skillTaken = false,         -- false if this is a skill casted by the unit
+    fightId = nil, -- key to retrieve the fight that this skill belongs to in the table DarkMeter.fights
+    unitId = nil, -- key to retrieve the unit that this skill belongs to in the table DarkMeter.units
+    skillTaken = false, -- false if this is a skill casted by the unit
     damage = {
       deflects = 0,
       total = 0,
       hits = {},
       crits = {},
-      multihits = {},                 -- multihits can contain false values, these are added on multihit deflects
+      multihits = {}, -- multihits can contain false values, these are added on multihit deflects
       multicrits = {}
     },
     heals = {
       total = 0,
-      hits = {},                      -- stored as: {heal = n, oHeal = n}
+      hits = {}, -- stored as: {heal = n, oHeal = n}
+      crits = {},
+      multihits = {},
+      multicrits = {}
+    },
+    absorbs = {
+      total = 0,
+      hits = {}, -- stored as: {heal = n, oHeal = n}
       crits = {},
       multihits = {},
       multicrits = {}
@@ -37,7 +43,10 @@ function Skill:new()
     damageDone = 0,
     healingDone = 0,
     overhealDone = 0,
-    interrupts = 0
+    absorbHealingDone = 0,
+    interrupts = 0,
+    absorbsDone = 0,
+    absorbsTaken = 0
   }
   self.__index = self
   return setmetatable(initialValues, self)
@@ -61,9 +70,6 @@ function Skill:unit()
   return unit
 end
 
-
-
-
 -- adds new input to the current skill
 function Skill:add(formattedSkill)
   -- set skill name
@@ -75,7 +81,7 @@ function Skill:add(formattedSkill)
     self.ownerName = formattedSkill.ownerName
   end
 
-    -- set if skill is a dot
+  -- set if skill is a dot
   if self.dot == nil then
     self.dot = formattedSkill.dot
     -- if the skill is a dot, also set the normal skill name
@@ -90,22 +96,24 @@ function Skill:add(formattedSkill)
 
     -- TODO commented this because I'm trying to remove the original spell table from the formattedskill
     -- if (icon == nil or icon == "") and formattedSkill.spell then
-    --   icon = formattedSkill.spell:GetIcon()
+    -- icon = formattedSkill.spell:GetIcon()
     -- end
-    
+
     self.icon = icon or false -- if icon is nil, a false value as fallback will prevent from searching the icon again on the next add
   end
 
   -- damage skill
   if formattedSkill.typology == "damage"and not formattedSkill.fallingDamage then
     self:ProcessDamage(formattedSkill)
-  -- healing skill
+    -- healing skill
   elseif formattedSkill.typology == "healing" then
     self:ProcessHeal(formattedSkill)
-  -- cc effect
+    -- cc effect
+  elseif formattedSkill.typology == "absorbs" then
+    self:ProcessAbsorb(formattedSkill)
   elseif formattedSkill.interrupts ~= nil and formattedSkill.interrupts > 0 then
     self:ProcessCC(formattedSkill)
-  -- falling damage
+    -- falling damage
   elseif formattedSkill.fallingDamage then
     self:ProcessFallingDamage(formattedSkill)
   end
@@ -114,8 +122,8 @@ end
 -- ATTENTION this function is critical, any changed to the skill class may break the merge funct
 -- merge two skills data together (used to merge a skill with its separate dot skill's data)
 function Skill:merge(skill)
-  for _, typology in pairs({"damage", "heals"}) do
-    for stat, val in pairs(self[typology]) do
+  for _, typology in next, {"damage", "heals", "aborbs"} do
+    for stat, val in next, self[typology] do
       if type(val) == "number" then
         self[typology][stat] = self[typology][stat] + skill[typology][stat]
       elseif type(val) == "table" then
@@ -124,13 +132,13 @@ function Skill:merge(skill)
     end
   end
 
-    -- quick reference values
+  -- quick reference values
   self.damageDone = self.damageDone + skill.damageDone
   self.healingDone = self.healingDone + skill.healingDone
   self.overhealDone = self.overhealDone + skill.overhealDone
   self.interrupts = self.interrupts + skill.interrupts
+  self.absorbsDone = self.absorbsDone + skill.absorbsDone
 end
-
 
 -- process a damaging skill
 function Skill:ProcessDamage(skill)
@@ -146,7 +154,7 @@ function Skill:ProcessDamage(skill)
     if skill.multihit then
       self.damage.multihits[#self.damage.multihits + 1] = false
     end
-  -- crit
+    -- crit
   elseif skill.state == critCode then
     if skill.multihit then
       self.damage.multicrits[#self.damage.multicrits + 1] = skill.damage
@@ -165,7 +173,7 @@ function Skill:ProcessDamage(skill)
         fight.damageDoneTotal = fight.damageDoneTotal + skill.damage
       end
     end
-  -- normal hit
+    -- normal hit
   elseif skill.state == hitCode then
     if skill.multihit then
       self.damage.multihits[#self.damage.multihits + 1] = skill.damage
@@ -187,13 +195,12 @@ function Skill:ProcessDamage(skill)
   end
 end
 
-
 -- process an healing skill
 function Skill:ProcessHeal(skill)
   if not skill.multihit then
     self.heals.total = self.heals.total + 1
   end
-  
+
   local tmpSkill = {}
   tmpSkill.heal = skill.heal
   tmpSkill.oHeal = skill.overheal
@@ -205,7 +212,7 @@ function Skill:ProcessHeal(skill)
     else
       self.heals.crits[#self.heals.crits + 1] = tmpSkill
     end
-  -- normal hit
+    -- normal hit
   elseif skill.state == hitCode then
     if skill.multihit then
       self.heals.multihits[#self.heals.multihits + 1] = tmpSkill
@@ -226,7 +233,6 @@ function Skill:ProcessHeal(skill)
   end
 end
 
-
 function Skill:ProcessCC(skill)
   self.interrupts = self.interrupts + skill.interrupts
   -- adds interrupts the skill's fight
@@ -236,7 +242,6 @@ function Skill:ProcessCC(skill)
     fight.interruptsTotal = fight.interruptsTotal + skill.interrupts
   end
 end
-
 
 function Skill:ProcessFallingDamage(skill)
   self.damageDone = self.damageDone + skill.damage
@@ -248,9 +253,27 @@ function Skill:ProcessFallingDamage(skill)
   end
 end
 
+function Skill:ProcessAbsorb(skill)
+  SendVarToRover("skill", skill)
+
+  self.absorbs.total = self.absorbs.total + 1
+  self.absorbsDone = self.absorbsDone + skill.absorb
+  self.absorbsTaken = self.absorbsTaken + skill.absorb
+  self.absorbs.hits[#self.absorbs.hits + 1] = skill.absorb
+  -- adds absord the skill's fight
+  local fight = self:fight()
+  local unit = self:unit()
+
+  SendVarToRover("absorbsDoneTotal", fight.absorbsDoneTotal)
+  SendVarToRover("absorbsTakenTotal", fight.absorbsTakenTotal)
+  if fight and unit and not unit.enemy then
+    fight.absorbsTakenTotal = fight.absorbsTakenTotal + skill.absorb
+    fight.absorbsDoneTotal = fight.absorbsDoneTotal + skill.absorb
+  end
+end
 
 ------------------------------------------
---   stats processing functon
+-- stats processing functon
 ------------------------------------------
 -- this function is just an helper to dynamically get the needed stat amount
 
@@ -268,11 +291,16 @@ function Skill:dataFor(stat)
     return self.interrupts
   elseif stat == "rawhealDone" then
     return self.healingDone + self.overhealDone
+  elseif stat == "absorbHealingDone" then
+    return self.healingDone + self.absorbsDone
+  elseif stat == "absorbsDone" then
+    return self.absorbsDone
+  elseif stat == "absorbsTaken" then
+    return self.absorbsTaken
   else
     Apollo.AddAddonErrorText(DarkMeter, "Skill class cannot pull data for stat: " .. stat)
   end
 end
-
 
 -- returns integer percentage of multihit, crit, deflects...
 function Skill:statsPercentages(sStat)
@@ -281,6 +309,8 @@ function Skill:statsPercentages(sStat)
     key = "damage"
   elseif sStat == "healingDone" or sStat == "overhealDone" or sStat == "rawhealDone" then
     key = "heals"
+  elseif sStat == "absorbsDone" or sStat == "absorbsTaken" then
+    key = "absorbs"
   end
 
   if key then
@@ -318,30 +348,34 @@ function Skill:statsPercentages(sStat)
       percentages.deflectsCount = 0
       percentages.deflects = 0
     end
-    
+
     percentages.attacks = total
     return percentages
   end
   return nil
 end
 
-
 -------------------------------------------------
 -- Min, Max and Avg functions for each stat
 -------------------------------------------------
 
 -- returns a table with avg hit, crit, multihit and multicrit
-for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"}) do
-  
+for _, st in next, {"damageDone", "healingDone", "overhealDone", "rawhealDone", "absorbsDone"} do
+
   Skill[st .. "Avg"] = function (self)
     local tmp = {}
-    local tble = st == "damageDone" and self.damage or self.heals
-    
-    for k, v in pairs(tble) do
+    local tble = self.heals
+    if st == "damageDone" then
+      tble = self.damage
+    elseif st == "absorbsDone" then
+      tble = self.absorbs
+    end
+
+    for k, v in next, tble do
       if type(v) == "table" then
         local i = 0
         tmp[k] = 0
-        for _, amount in pairs(v) do
+        for _, amount in next, v do
           if amount ~= false then
             if st == "damageDone" then
               tmp[k] = tmp[k] + amount
@@ -351,6 +385,8 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
               tmp[k] = tmp[k] + amount.oHeal
             elseif st == "rawhealDone" then
               tmp[k] = tmp[k] + amount.heal + amount.oHeal
+            elseif st == "absorbsDone" then
+              tmp[k] = tmp[k] + amount
             end
 
             i = i + 1
@@ -364,16 +400,20 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
     return tmp
   end
 
-
   Skill[st .. "Max"] = function(self)
     local tmp = {}
-    local tble = st == "damageDone" and self.damage or self.heals
+    local tble = self.heals
+    if st == "damageDone" then
+      tble = self.damage
+    elseif st == "absorbsDone" then
+      tble = self.absorbs
+    end
 
-    for k, v in pairs(tble) do
+    for k, v in next, tble do
       if type(v) == "table" then
         local arr = {}
 
-        for _, amount in pairs(v) do
+        for _, amount in next, v do
           if amount ~= false then
             if st == "damageDone" then
               arr[#arr + 1] = amount
@@ -383,6 +423,8 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
               arr[#arr + 1] = amount.oHeal
             elseif st == "rawhealDone" then
               arr[#arr + 1] = (amount.heal + amount.oHeal)
+            elseif st == "absorbsDone" then
+              arr[#arr + 1] = amount
             end
           end
         end
@@ -395,16 +437,20 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
     return tmp
   end
 
-
   Skill[st .. "Min"] = function(self)
     local tmp = {}
-    local tble = st == "damageDone" and self.damage or self.heals
+    local tble = self.heals
+    if st == "damageDone" then
+      tble = self.damage
+    elseif st == "absorbsDone" then
+      tble = self.absorbs
+    end
 
-    for k, v in pairs(tble) do
+    for k, v in next, tble do
       if type(v) == "table" then
         local arr = {}
 
-        for _, amount in pairs(v) do
+        for _, amount in next, v do
           if amount ~= false then
             if st == "damageDone" then
               arr[#arr + 1] = amount
@@ -414,6 +460,8 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
               arr[#arr + 1] = amount.oHeal
             elseif st == "rawhealDone" then
               arr[#arr + 1] = (amount.heal + amount.oHeal)
+            elseif st == "absorbsDone" then
+              arr[#arr + 1] = amount
             end
           end
         end
@@ -427,10 +475,5 @@ for _, st in pairs({"damageDone", "healingDone", "overhealDone", "rawhealDone"})
   end
 
 end
-
-
-
-
-
 
 Apollo.RegisterPackage(Skill, "DarkMeter:Skill", 1, {"DarkMeter:Utils"})
