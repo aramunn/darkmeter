@@ -8,7 +8,7 @@
 require "Window"
 
 local DarkMeter = {}
-DarkMeter.version = "0.6.1"
+DarkMeter.version = "0.6.2"
 
 if _G.DarkMeter == nil then _G.DarkMeter = {} end
 -- enable prints and rover debugging
